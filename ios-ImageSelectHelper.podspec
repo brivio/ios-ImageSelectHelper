@@ -14,4 +14,6 @@ Pod::Spec.new do |s|
 
   s.source_files = 'source/**/*.{h,m,c}'
   s.dependency 'LCActionSheet'
+  s.dependency 'CocoaSecurity'
+  s.frameworks='MobileCoreServices'
 end

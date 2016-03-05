@@ -13,6 +13,7 @@ Pod::Spec.new do |s|
   s.requires_arc = true
 
   s.source_files = 'source/**/*.{h,m,c}'
+  s.resources='source/**/*.bundle'
   s.dependency 'LCActionSheet'
   s.dependency 'CocoaSecurity'
   s.frameworks='MobileCoreServices'

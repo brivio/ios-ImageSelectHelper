@@ -1,13 +1,15 @@
 #import "ImageSelectHelper.h"
 #import "LCActionSheet.h"
-#import "XZImageCropperViewController.h"
 #import "Base64.h"
+#import "MLSelectPhotoPickerViewController.h"
+#import "MLSelectPhotoAssets.h"
 #import <MobileCoreServices/MobileCoreServices.h>
 
 @implementation ImageSelectHelper {
     UIViewController *_controller;
     ImageSelectCallback _callback;
     UIImagePickerController *_imagePicker;
+    NSArray *multiAssets;
 }
 
 - (void)setup:(UIViewController *)context callback:(ImageSelectCallback)callback {
@@ -37,14 +39,26 @@
             }
         } else if (buttonIndex == 1) {
             // 从相册中选取
-            if ([self isPhotoLibraryAvailable]) {
+            if (_maxCount > 0) {
+                // 创建控制器
+                MLSelectPhotoPickerViewController *pickerVc = [[MLSelectPhotoPickerViewController alloc] init];
+                // 默认显示相册里面的内容SavePhotos
+                pickerVc.selectPickers = multiAssets;
+                pickerVc.maxCount = _maxCount;
+                pickerVc.status = PickerViewShowStatusCameraRoll;
+                [pickerVc showPickerVc:context];
+                pickerVc.callBack = ^(NSArray *assets) {
+                    [assets enumerateObjectsUsingBlock:^(MLSelectPhotoAssets *asset, NSUInteger idx, BOOL *stop) {
+                        [self compress:[MLSelectPhotoPickerViewController getImageWithImageObj:asset]];
+                    }];
+                };
+            } else if ([self isPhotoLibraryAvailable]) {
                 _imagePicker = [[UIImagePickerController alloc] init];
                 _imagePicker.navigationBar.tintColor = [UIColor whiteColor];
                 _imagePicker.navigationBar.titleTextAttributes = @{
                         NSFontAttributeName : [UIFont boldSystemFontOfSize:18],
                         NSForegroundColorAttributeName : [UIColor whiteColor],
                 };
-
                 _imagePicker.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
                 NSMutableArray *mediaTypes = [[NSMutableArray alloc] init];
                 [mediaTypes addObject:(__bridge NSString *) kUTTypeImage];
@@ -65,15 +79,19 @@
     [picker dismissViewControllerAnimated:YES completion:^() {
         UIImage *portraitImg = info[@"UIImagePickerControllerOriginalImage"];
         portraitImg = [self imageByScalingToMaxSize:portraitImg];
-        CGFloat width = _controller.view.frame.size.width;
-        CGFloat height = _controller.view.frame.size.height;
-        CGFloat top = (height - 200.0f) / 2.0f;
-        CGFloat left = (width - 200.0f) / 2.0f;
-        // 裁剪
-        XZImageCropperViewController *imgEditorVC = [[XZImageCropperViewController alloc] initWithImage:portraitImg cropFrame:CGRectMake(left, top, 200.0f, 200.0f) limitScaleRatio:3];
-        imgEditorVC.delegate = self;
-        [_controller presentViewController:imgEditorVC animated:YES completion:^() {
-        }];
+        if (self.isCrop) {
+            CGFloat width = _controller.view.frame.size.width;
+            CGFloat height = _controller.view.frame.size.height;
+            CGFloat top = (height - 200.0f) / 2.0f;
+            CGFloat left = (width - 200.0f) / 2.0f;
+            // 裁剪
+            XZImageCropperViewController *imgEditorVC = [[XZImageCropperViewController alloc] initWithImage:portraitImg cropFrame:CGRectMake(left, top, 200.0f, 200.0f) limitScaleRatio:3];
+            imgEditorVC.delegate = self;
+            [_controller presentViewController:imgEditorVC animated:YES completion:^() {
+            }];
+        } else {
+            [self compress:portraitImg];
+        }
     }];
 }
 
@@ -84,14 +102,17 @@
 
 #pragma mark XZImageCropperDelegate
 
-- (void)imageCropper:(XZImageCropperViewController *)cropperViewController didFinished:(UIImage *)editedImage {
-
-    NSData *data = UIImageJPEGRepresentation(editedImage, 0.5);
+- (void)compress:(UIImage *)img {
+    NSData *data = UIImageJPEGRepresentation(img, 0.5);
 
     while ([data length] / 1024 > 300) {
-        data = UIImageJPEGRepresentation(editedImage, 0.5);
+        data = UIImageJPEGRepresentation(img, 0.5);
     }
-    _callback([data base64EncodedString], editedImage);
+    _callback([data base64EncodedString], img);
+}
+
+- (void)imageCropper:(XZImageCropperViewController *)cropperViewController didFinished:(UIImage *)editedImage {
+    [self compress:editedImage];
     [cropperViewController dismissViewControllerAnimated:YES completion:nil];
 }
 

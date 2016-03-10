@@ -1,8 +1,8 @@
 #import "ImageSelectHelper.h"
 #import "LCActionSheet.h"
-#import "Base64.h"
 #import "MLSelectPhotoPickerViewController.h"
 #import "MLSelectPhotoAssets.h"
+#import "NSData+Extend.h"
 #import <MobileCoreServices/MobileCoreServices.h>
 
 @implementation ImageSelectHelper {
@@ -108,7 +108,7 @@
     while ([data length] / 1024 > 300) {
         data = UIImageJPEGRepresentation(img, 0.5);
     }
-    _callback([data base64EncodedString], img);
+    _callback([data base64_encode], img);
 }
 
 - (void)imageCropper:(XZImageCropperViewController *)cropperViewController didFinished:(UIImage *)editedImage {

@@ -9,7 +9,7 @@
     UIViewController *_controller;
     ImageSelectCallback _callback;
     UIImagePickerController *_imagePicker;
-    NSArray *multiAssets;
+    NSMutableArray *multiAssets;
 }
 
 - (void)setup:(UIViewController *)context callback:(ImageSelectCallback)callback {
@@ -105,7 +105,7 @@
 - (void)compress:(UIImage *)img {
     NSData *data = UIImageJPEGRepresentation(img, 0.5);
 
-    while ([data length] / 1024 > 300) {
+    while ([data length] / 1024 > 500) {
         data = UIImageJPEGRepresentation(img, 0.5);
     }
     _callback([data base64_encode], img);
